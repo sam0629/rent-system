@@ -1,3 +1,4 @@
 場地租借系統
 資料庫使用mysql
-後端使用
+後端使用python
+還有使用到jquery和bootstap
