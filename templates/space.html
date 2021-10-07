@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block header %}
+<link rel="stylesheet" href="{{url_for('static', filename='/css/space.css')}}"/>
+<style>
+    table.dataTable tbody td {
+        padding: 0;
+        text-align: center;
+    }
+
+    .tb-btn {
+        display: block;
+        width: 99%;
+        height: 30px;
+        padding: 15px 0;
+        margin: 3px auto;
+    }
+
+    .tb-btn-red {
+        background-color: #f00;
+    }
+
+    .tb-btn-blue {
+        background-color: cornflowerblue;
+    }
+</style>
+{% endblock header%}
+{% block content%}
+<div>
+    <p align="center">{{msg}}</p>
+</div>
+<div>
+    <form id="form_space">
+        <input type="date" value="2021-06-01" name="date">
+        <select name='sType' id="select_space">
+            {% for type in Alltypes %}
+            <option>{{ type.SType }}</option>
+            {% endfor %}
+        </select>
+
+        <input type="submit" value="查詢" id="search_space">
+
+    </form>
+
+
+    <table id="table">
+    </table>
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="form_space_time">
+                    <div class="modal-body">
+                        <p id="date"></p>
+                        <p id="stype"></p>
+                        <p id="sid"></p>
+                        <div>
+                            <p id="startTime"></p>
+                            <p id="endTime"></p>
+                            <p id="showTotalTime">總時數</p>
+                            <select id="totalTime" name="totalTime" onchange="change()">
+
+                            </select>
+
+                        </div>
+                        <div>
+                            <p id="money" align="center"></p>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary" id="submit">送出</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+{% block script %}
+<script>
+    var table = null;
+    var myModal = null;
+    var modalData = null;
+    $(function () {
+        initModal();
+    });
+
+
+    $('#form_space').submit(function (e) {
+        e.preventDefault()
+        $.ajax({
+            url: "space",
+            method: 'post',
+            dataType: 'json',
+            data: {
+                "enterspace": $("select#select_space option:checked").val(),
+                "enterdate": $('input[name="date"]').val()
+            }
+        }).done(function (resp) {
+            if ($.fn.dataTable.isDataTable('#table')) {
+                table.destroy()
+                $('#table').empty()
+            }
+            setTable(resp)
+        })
+    })
+
+    function setTable(resp) {
+        table = $('#table').DataTable({
+            width: 100,
+            data: resp.data,
+            searching: false,
+            lengthChange: false,
+            ordering: false,
+            paging: false,
+            info: false,
+            columns: resp.columns,
+            columnDefs: [
+                {
+                    targets: 0,
+                    render: function (data, columns, type, row) {
+                        return moment.utc(data).format('HH:mm')
+                    }
+                },
+                {
+                    targets: resp.targets,
+                    render: function (data, columns, type, row) {
+                        var css = data ? 'tb-btn-blue' : 'tb-btn-red'
+                        return `<input class="tb-btn ${css}" type="button" />`
+                    }
+                }
+            ]
+        });
+
+        setTableBtn();
+    }
+
+    /**
+     * 選擇時數動態變換結束時間與總金額
+     * */
+    function change() {
+        modalData.total_time = $("#totalTime").val();
+
+        modalData.money = modalData.unit_price * modalData.total_time
+        modalData.end_time = moment.utc(modalData.start_time, 'HH:mm ')
+            .add(modalData.total_time, 'hours').format('HH:mm')
+
+        $("#endTime #money").empty()
+        $("#endTime").text(`結束時間:${modalData.end_time}`)
+        $('#money').text(`總金額:${modalData.money}`)
+    }
+
+    function setTableBtn() {
+        $('.tb-btn-blue ').click(function () {
+            var rowData = table.row($(this).parents('tr')).data()
+            var sid = table.cell($(this).parent('td')).data()
+            var date = moment.utc(rowData.time).format('YYYY-MM-DD')
+            var startTime = moment.utc(rowData.time).format('HH:mm')
+
+            $.ajax({
+                method: 'post',
+                url: 'data',
+                dataType: 'json',
+                data: {
+                    sid: sid,
+                    date: date,
+                    startTime: startTime
+                }
+            }).done(function (res) {
+                console.log(res)
+                if(res.number == null){
+                    alert("有人手腳比較快先搶走囉")
+                    $('#search_space').click()
+                }
+                else{
+                    modalData = res
+                    setModal(modalData)
+                    myModal.show();
+                }
+            })
+
+            // myModal.show();
+        })
+    }
+
+    function initModal() {
+        myModal = new bootstrap.Modal(document.getElementById('myModal'), {
+            keyboard: false
+        })
+
+        myModal.addEventListener('hidden.bs.modal', function (event) {
+            modalData = null
+            myModal.dispose()
+        })
+    }
+
+    function setModal(data) {
+
+
+        var totalTime = $('#totalTime')
+        totalTime.empty()
+
+        for (var i = 1; i <= data.number; i++) {
+            totalTime.append(`<option value="${i}">${i}</option`)
+        }
+        totalTime.val(1)
+
+        $('#money').text(`總金額:${data.money}`)
+        $('#sid').text(`場地名稱:第${data.sid}間`)
+        $('#startTime').text(`起始時間:${data.start_time}`)
+        $('#date').text(`借閱日期:${data.date}`)
+        $('#stype').text(`場地類型:${data.stype}`)
+        $('#endTime').text(`結束時間:${data.end_time}`)
+    }
+
+    $("#myModal").submit(function (e) {
+        e.preventDefault()
+        $.ajax({
+            url: 'sure',
+            method: 'post',
+            dataType: 'json',
+            data: {
+                "sid": modalData.sid,
+                "date": modalData.date,
+                "start_time": modalData.start_time,
+                "end_time": modalData.end_time,
+                "total_time": modalData.total_time,
+                "money": modalData.money
+            }
+        }).done(function (res) {
+            if (res.result === true) {
+                alert("預約成功")
+                myModal.hide()
+                $('#search_space').click()
+            } else
+                alert("預約失敗，可能有人搶先你一步囉")
+                myModal.hide()
+                $('#search_space').click()
+        })
+    })
+
+
+</script>
+{% endblock script %}

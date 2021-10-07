@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block header %}
+<link rel="stylesheet" href="{{url_for('static', filename='/css/product.css')}}"/>
+{% endblock header%}
+{% block content%}
+    <div id="test">
+        <h1>商品加購</h1>
+        <button id="cart">購物車</button>
+    </div>
+
+
+<!--商品查詢下拉式選單-->
+    <form id="form_search" ,method="post">
+        <select id="date" onchange="changeDate()">
+            {% if Alltimes == () %}
+                <option>請先預約包廂</option>
+            {% else %}
+                 {% for time in Alltimes %}
+                    <option>{{ time.TradeTime }} SId:{{time.SId}}</option>}
+                 {% endfor %}
+            {% endif %}
+        </select>
+        <select id="select_search">
+            <option value="all">全部商品</option>}
+            {% for type in Alltypes %}
+            <option>{{ type.PType }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" name="search" value="查詢">
+    </form>
+    <div class="printAndCar">
+        <hr>
+        <div id="test2"><table id="print_pdata"></table></div>
+        <form id="form_product" ,method="post">
+        <div class="center">場地&時間:<span id="selectedDate"></span></div>
+        <table id="addProduct">
+            <thead>
+            <tr>
+                <th>商品標號</th>
+                <th>商品名稱</th>
+                <th>商品單價</th>
+                <th>購買數量</th>
+                <th>價格</th>
+                <th>移除</th>
+            </tr>
+            </thead>
+        </table>
+            <div class="center">總金額:<span id="totalMoney">0</span>元</div>
+            <div class="center">
+                <input type="submit" value="去結帳" id="payMoneyAndCheck">
+                <input type="button" value="關閉" id="close">
+            </div>
+        </form>
+    </div>
+
+{% endblock content %}
+{% block script %}
+<script>
+    var list2=[]
+    window.onload= function(){
+        selectdate=$('#date').val()
+        $('#selectedDate').append(selectdate)
+    }
+    function changeDate(){
+        var selectdate=$('#date').val()
+        $('#selectedDate').empty()
+        $('#selectedDate').append(selectdate)
+    }
+    function add(th){
+        var val = Number($(th).prev().val())
+        val+=1
+        $(th).prev().val(val)
+        var price = Number($(th).parent().siblings('.price').text())
+        var totalPrice = val * price
+        $(th).parent().siblings('.totalPrice').text(totalPrice)
+        calculateTotalMoney()
+    }
+    function sub(th){
+        var val = Number($(th).next().val())
+        var price = Number($(th).parent().siblings('.price').text())
+        var totalPrice
+        if (val > 1) {
+            val-=1
+            totalPrice = val * price
+            $(th).next().val(val)
+            $(th).parent().siblings('.totalPrice').text(totalPrice)
+        }
+        else{
+            alert("最少要購買一份喔")
+        }
+        calculateTotalMoney()
+    }
+
+    function del(th) {
+        var delId,id
+        id =  $(th).parent().siblings('.id').text()
+        list2.forEach(function(item, index, arr) {
+            if(item === id) {
+            arr.splice(index, 1);
+            delId = "del"+id
+            $("#"+delId).remove();
+            }
+        });
+        if(list2.length === 0){
+            $('#cart').css("background-color", "white");
+        }else{
+            $('#cart').css("background-color", "red");
+        }
+        calculateTotalMoney()
+    }
+    function send(th){
+        var id = $(th).parent().siblings('.id').text()
+        var name = $(th).parent().siblings('.name').text()
+        var price = $(th).parent().siblings('.price').text()
+        if(list2.indexOf(id)===-1){
+             list2.push(id)
+            $('#addProduct').append(`<tr id="del${id}"><td class="id">${id}</td><td class="name">${name}</td><td class="price">${price}</td><td><button type="button" onclick="sub(this)">-</button><input type='text' value='1' class="numberCount" id='numberCount${id}'><button onclick="add(this)" type="button">+</button><td class="totalPrice">${price}</td><td><button onclick="del(this)" type="button">x</button></td></tr>`)
+        }else {
+             alert("此商品已在購物車中")
+        }
+        if(list2.length === 0){
+            $('#cart').css("background-color", "white");
+        }else{
+            $('#cart').css("background-color", "red");
+        }
+        calculateTotalMoney()
+    }
+    function calculateTotalMoney(){
+        var table = document.getElementById('addProduct')
+        var total = 0
+        for (var i = 1 ;i < table.rows.length;i++){
+            total += parseInt(table.rows[i].cells[4].innerHTML)
+        }
+        $('#totalMoney').empty()
+        $('#totalMoney').append(total)
+    }
+
+
+ $('#form_search').submit(function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: "product",
+            method:"post",
+            dataType:'json',
+            data: {"entertype":$( "select#select_search option:checked" ).val()}
+        }).done(function (res) {
+            $('#print_pdata').empty()
+            $('#print_pdata').append(
+                '<thead>'+
+                    '<tr>'+
+                        '<th>'+'商品標號'+'</th>'+
+                        '<th>'+'商品名稱'+'</th>'+
+                        '<th>'+'商品單價'+'</th>'+
+                        '<th>'+'剩餘數量'+'</th>'+
+                        '<th>'+'加入購物車'+'</th>'+
+                    '</tr>'+
+                '</thead>'+'<tbody>'
+            )
+            $.each(res, function (i, element) {
+                    $('#print_pdata').append(
+                        '<tr>'+
+                        '<td class="id">'+element.PId+'</td>'+
+                        '<td class="name">'+element.PName+'</td>'+
+                        '<td class="price">'+element.PUnitPrice+'</td>'+
+                        '<td class="number">'+element.pNumber+'</td>'+
+                        '<td>'+'<button onclick="send(this)" >+</button>'+'</td>'+
+                        '</tr>'
+                    )
+            })
+            $('#print_pdata').append('</tbody>')
+
+            })
+        })
+
+    var isShow = 0
+    $('#cart').click(function (){
+        if(isShow){
+            $('#form_product').hide()
+            // $('#print_pdata').show()
+            isShow = 0
+        }else{
+            $('#form_product').show()
+            // $('#print_pdata').hide()
+             isShow = 1
+        }
+
+    })
+    $('#close').click(function (){
+        $('#form_product').hide()
+        // $('#print_pdata').show()
+        isShow = 0
+    })
+
+    $('#form_product').submit(function (e){
+        e.preventDefault()
+        var data = []
+        var table = document.getElementById('addProduct')
+        for (var i = 1 ;i < table.rows.length;i++){
+            element = {}
+            pid = table.rows[i].cells[0].innerHTML
+            pname = table.rows[i].cells[1].innerHTML
+            pamount =$('#numberCount'+pid).val()
+            element ={'pid':pid,'pname':pname,'pamount':pamount}
+            data.push(element)
+        }
+        $.ajax({
+            method: 'post',
+            data: {cart:JSON.stringify(data),date_and_sid:$("select#date option:checked").val()},
+            url:'record'
+        }).done(function (res){
+            console.log(res)
+            alert(res.msg)
+        })
+    })
+    </script>
+
+{% endblock script %}
+
+
+
+
+
+
+
+
+
+

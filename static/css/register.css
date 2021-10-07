@@ -1,0 +1,24 @@
+*{
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+input{
+    padding: 2px 5px;
+}
+form div{
+    margin: 2px;
+}
+.login_form{
+    width: 100%;
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.register_btn{
+    margin-top: 10px;
+}
+
+

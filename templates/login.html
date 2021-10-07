@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block header %}
+<link rel="stylesheet" href="{{url_for('static', filename='/css/login.css')}}"/>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossOrigin="anonymous"></script>
+{% endblock header%}
+{% block content%}
+<form action="/login" method="post" class="login_form">
+     <div>
+         <label for="">帳號</label>
+         <input type="text" name="account" placeholder="account" required>
+     </div>
+     <div>
+         <label for="">密碼</label>
+         <input type="password" name="password" placeholder="password" required>
+     </div>
+     <div class="login_btn">
+         <input type="submit" value="登入">
+     </div>
+ </form>
+{% endblock content%}

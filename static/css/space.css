@@ -1,0 +1,19 @@
+#form_space{
+    display: flex;
+    padding: 0 35%;
+
+}
+
+table{
+    width: 90vw;
+}
+#check_form{
+    display: none;
+}
+td{
+    border: 1px solid black;
+    cursor: pointer;
+}
+td:hover{
+    background-color: yellow;
+}

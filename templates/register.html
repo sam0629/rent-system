@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block header %}
+<link rel="stylesheet" href="{{url_for('static', filename='/css/register.css')}}"/>
+{% endblock header%}
+{% block content%}
+ <form action="/register" method="post" class="login_form">
+         <div>
+             <label for=""> 暱稱 </label>
+             <input type="text" name="name" placeholder="name">
+         </div>
+         <div>
+             <label for=""> 帳號 </label>
+             <input type="text" name="account" placeholder="account " required>
+         </div>
+         <div>
+             <label for=""> 密碼 </label>
+             <input type="password" id="password"  name="password" placeholder="password" required>
+         </div>
+                  <div>
+             <label for="">密碼</label>
+             <input type="password" id="password2" name="password2" placeholder="confirm password" required>
+         </div>
+         <span id="message"></span>
+         <div class="register_btn">
+             <input type="submit" value="註冊">
+         </div>
+     </form>
+{% endblock content %}
+{% block script %}
+    <script>
+         $('#password2,#password').on('keyup', function () {
+            if ($('#password').val() == $('#password2').val()) {
+                $('#message').html('密碼相同').css('color', 'green');
+            } else
+                $('#message').html('密碼輸入不同').css('color', 'red');
+        });
+
+         $('.login_form').submit(function (e) {
+             e.preventDefault()
+             if ($('#message').html() === "密碼相同") {
+                 $.ajax({
+                     url: "register",
+                     method: "post",
+                     dataType: 'json',
+                     data: {
+                         "name": $('input[name="name"]').val(),
+                         "account": $('input[name="account"]').val(),
+                         "password": $('input[name="password"]').val()
+                     }
+                 }).done(function (res){
+                     console.log(res)
+                     if(res)
+                         alert("註冊成功")
+                     else
+                         alert("註冊失敗，帳號已被註冊，請重試")
+                 })
+             }
+         })
+    </script>
+
+{% endblock script %}
+
+

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block header %}
+<link rel="stylesheet" href="{{url_for('static', filename='/css/home.css')}}"/>
+{% endblock header%}
+{% block content%}
+<div class="welcome">
+    <marquee direction="right"  scrollamount="5" behavior="alternate">{{msg}}</marquee>
+</div>
+<div>
+        <h1>注意事項</h1>
+        <p class="item">
+            1,本網站採會員制，所有操作都要登入後才能使用
+        </p>
+        <p class="item">
+            2.每人每次預約以三小時為限，但可重複預約
+        </p>
+        <p class="item">
+            3.本公司保有取消訂單與刪除帳號的權利
+        </p>
+</div>
+{% endblock content%}
